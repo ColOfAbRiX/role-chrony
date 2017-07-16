@@ -1,0 +1,58 @@
+---
+# tasks file for chrony
+
+- name: "Include OS-Specific Variables"
+  include_vars: "vars_{{ ansible_distribution | lower }}_{{ ansible_distribution_major_version }}.yml"
+  tags: chrony
+
+- name: "Install  Dependencies"
+  package: name="{{ item }}" state=present
+  with_items:
+   - "{{ chrony_pre_pkgs }}"
+  tags: chrony
+
+- name: "Install Chrony"
+  package:
+    name: "{{ item }}{% if chrony_version not in ['', 'latest'] %}-{{ chrony_version }}{% endif %}"
+    state: "{% if chrony_version != 'latest' %}present{% else %}latest{% endif %}"
+  with_items: "{{ chrony_pkgs }}"
+  tags: chrony
+
+- name: "Chrony Configuration"
+  template:
+    src:    etc/chrony.conf.j2
+    dest:   "{{ chrony_path_info.conf_path }}"
+    owner:  root
+    group:  root
+    mode:   0644
+    seuser: system_u
+    serole: object_r
+    setype: net_conf_t
+  notify:
+   - Restart Chrony
+  register: chrony_conf
+  tags: chrony
+
+- name: "SELinux-aware Chrony Client"
+  file:
+    state:  file
+    path:   "{{ chrony_path_info.chronyc_path }}"
+    setype: chronyd_exec_t
+  tags: chrony
+
+- name: "Chrony Service"
+  service:
+    name:    "{{ chrony_service_info.name }}"
+    state:   started
+    enabled: yes
+    pattern: chronyd
+  tags: chrony
+
+- name: "Restart Chrony"
+  service:
+    name:    "{{ chrony_service_info.name }}"
+    state:   restarted
+    enabled: yes
+    pattern: chronyd
+  when: chrony_conf | changed
+  tags: chrony

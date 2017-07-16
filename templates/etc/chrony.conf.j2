@@ -1,0 +1,507 @@
+{#
+Write a single definition on the file
+#}
+{% macro write(object, blacklist_keys = []) %}
+{% if object is mapping -%}
+    {% for key, value in object.iteritems() if key not in blacklist_keys -%}
+        {%- if value == True -%}
+            {{ key }}
+        {%- elif value != False -%}
+            {{ key }} {{ write(value) }}
+        {%- endif -%}
+    {%- endfor %} {##}
+{%- elif object is iterable and object is not string -%}
+    {%- for item in object -%}{{ write(item) }}{% endfor -%}
+{%- elif object is string -%}
+    {{ object }} {##}
+{%- else -%}
+    {{ object }} {##}
+{%- endif -%}
+{% endmacro %}
+{# # # #  File begins # # # #}
+# {{ ansible_managed }}
+
+{#
+ # Time sources
+ #}
+{% if chrony_conf_servers | default([]) | length > 0 %}
+##
+# The server directive specifies an NTP server which can be used as a time
+# source.
+{% for entry in chrony_conf_servers %}
+server {{ entry.hostname }} {{ write(entry, ['hostname']) }}
+{% endfor %}
+
+{% endif %}
+{% if chrony_conf_pools | default([]) | length > 0 %}
+##
+# The syntax of this directive is similar to that for the server directive,
+# except that it is used to specify a pool of NTP servers rather than a single
+# NTP server.
+{% for entry in chrony_conf_pools -%}
+pool {{ entry.hostname }} {{ write(entry, ['hostname']) }}
+{% endfor %}
+
+{% endif %}
+{% if chrony_conf_peers | default([]) | length > 0 %}
+##
+# The syntax of this directive is identical to that for the server directive,
+# except that it is used to specify an NTP peer rather than an NTP server.
+{% for entry in chrony_conf_peers -%}
+peer {{ entry.hostname }} {{ write(entry, ['hostname']) }}
+{% endfor %}
+
+{% endif %}
+{% if chrony_conf_initstepslew is defined %}
+##
+# The purpose of the initstepslew  directive is to allow chronyd to make a rapid
+# measurement of the system clock  error at boot time, and to correct the system
+# clock by stepping before normal  operation begins.
+initstepslew {{ write(chrony_conf_initstepslew.step_threshold) }} {{ write(chrony_conf_initstepslew.hostnames, ['hostname']) }}
+
+{% endif %}
+{% if chrony_conf_refclocks | default([]) | length > 0 %}
+##
+# The refclock directive specifies a hardware reference clock to be used as a
+# time source.
+{% for entry in chrony_conf_refclocks -%}
+refclock {{ write(entry.driver) }} {{ write(entry.parameter) }} {{ write(entry.options) }}
+{% endfor %}
+
+{% endif %}
+{% if chrony_conf_manual is defined and chrony_conf_manual == True %}
+##
+# The manual directive enables support at run-time for the settime command in
+# chronyc.
+manual
+
+{% endif %}
+{% if chrony_conf_acquisitionport is defined %}
+##
+# You can use the acquisitionport directive to explicitly specify a port and use
+# only one socket (per IPv4 or IPv6 address family) for all configured servers.
+acquisitionport {{ write(chrony_conf_acquisitionport) }}
+
+{% endif %}
+{% if chrony_conf_bindacqaddress is defined %}
+##
+# The bindacqaddress directive sets the network interface to which chronyd will
+# bind its NTP client sockets.
+bindacqaddress {{ write(chrony_conf_bindacqaddress) }}
+
+{% endif %}
+{% if chrony_conf_dumpdir is defined %}
+##
+# To compute the rate of gain or loss of time, chronyd has to store a
+# measurement history for each of the time sources it uses.
+dumpdir {{ write(chrony_conf_dumpdir) }}
+
+{% endif %}
+{% if chrony_conf_dumponexit is defined and chrony_conf_dumponexit == True %}
+##
+# If this directive is present, it indicates that chronyd should save the
+# measurement history for each of its time sources recorded whenever the program
+# exits.
+dumponexit
+
+{% endif %}
+{% if chrony_conf_maxsamples is defined %}
+##
+# The maxsamples directive sets the default maximum number of samples that
+# chronyd should keep for each source.
+maxsamples {{ write(chrony_conf_maxsamples) }}
+
+{% endif %}
+{% if chrony_conf_minsamples is defined %}
+##
+# The minsamples directive sets the default minimum number of samples that
+# chronyd should keep for each source.
+minsamples {{ write(chrony_conf_minsamples) }}
+
+{% endif %}
+{#
+ # Source selection
+ #}
+{% if chrony_conf_combinelimit is defined %}
+##
+# The combinelimit directive limits which sources are included in the combining
+# algorithm.
+combinelimit {{ write(chrony_conf_combinelimit) }}
+
+{% endif %}
+{% if chrony_conf_maxdistance is defined %}
+##
+# The maxdistance directive sets the maximum allowed root distance of the
+# sources to not be rejected by the source selection algorithm.
+maxdistance {{ write(chrony_conf_maxdistance) }}
+
+{% endif %}
+{% if chrony_conf_minsources is defined %}
+##
+# The minsources directive sets the minimum number of sources that need to be
+# considered as selectable in the source selection algorithm before the local
+# clock is updated.
+minsources {{ write(chrony_conf_minsources) }}
+
+{% endif %}
+{% if chrony_conf_reselectdist is defined %}
+##
+# To avoid frequent reselecting when there are sources with similar distance, a
+# fixed distance is added to the distance for sources that are currently not
+# selected. This can be set with the reselectdist directive.
+reselectdist {{ write(chrony_conf_reselectdist) }}
+
+{% endif %}
+{% if chrony_conf_stratumweight is defined %}
+##
+# The stratumweight directive sets how much distance should be added per stratum
+# to the synchronisation distance when chronyd selects the synchronisation
+# source from available sources.
+stratumweight {{ write(chrony_conf_stratumweight) }}
+
+{% endif %}
+{% if chrony_conf_corrtimeratio is defined %}
+##
+# The corrtimeratio directive sets the ratio between the duration in which the
+# clock is slewed for an average correction according to the source history and
+# the interval in which the corrections are done (usually the NTP polling
+# interval).
+corrtimeratio {{ write(chrony_conf_corrtimeratio) }}
+
+{% endif %}
+{% if chrony_conf_driftfile is defined %}
+##
+# The driftfile directive allows a file to be specified into which chronyd can
+# store the rate information.
+driftfile {{ write(chrony_conf_driftfile) }}
+
+{% endif %}
+{% if chrony_conf_fallbackdrift is defined %}
+##
+# Fallback drifts are long-term averages of the system clock drift calculated
+# over exponentially increasing intervals. They are used when the clock is no
+# longer synchronised to avoid quickly drifting away from true time if there was
+# a short-term deviation in the drift before the synchronisation was lost.
+fallbackdrift {{ write(chrony_conf_fallbackdrift) }}
+
+{% endif %}
+{% if chrony_conf_leapsecmode is defined %}
+##
+# The leapsecmode directive selects how that error is corrected. There are four
+# options: system, step, slew, ignore
+leapsecmode {{ write(chrony_conf_leapsecmode) }}
+
+{% endif %}
+{% if chrony_conf_leapsectz is defined %}
+##
+# This directive is used to set the name of the timezone in the system tz
+# database which chronyd can use to find out when will the next leap second
+# occur.
+leapsectz {{ write(chrony_conf_leapsectz) }}
+
+{% endif %}
+{% if chrony_conf_makestep is defined %}
+##
+# This directive forces chronyd to step the system clock if the adjustment is
+# larger than a threshold value, but only if there were no more clock updates
+# since chronyd was started than a specified limit (a negative value can be used
+# to disable the limit).
+makestep {{ write(chrony_conf_makestep) }}
+
+{% endif %}
+{% if chrony_conf_maxchange is defined %}
+##
+# This directive sets the maximum allowed offset corrected on a clock update.
+maxchange {{ write(chrony_conf_maxchange) }}
+
+{% endif %}
+{% if chrony_conf_maxclockerror is defined %}
+##
+# The maxclockerror directive sets the maximum assumed frequency error that the
+# system clock can gain on its own between clock updates.
+maxclockerror {{ write(chrony_conf_maxclockerror) }}
+
+{% endif %}
+{% if chrony_conf_maxdrift is defined %}
+##
+# This directive specifies the maximum assumed drift (frequency error) of the
+# system clock. It limits the frequency adjustment that chronyd is allowed to
+# use to correct the measured drift.
+maxdrift {{ write(chrony_conf_maxdrift) }}
+
+{% endif %}
+{% if chrony_conf_maxupdateskew is defined %}
+##
+# The maxupdateskew directive sets the threshold for determining whether an
+# estimate might be so unreliable that it should not be used.
+maxupdateskew {{ write(chrony_conf_maxupdateskew) }}
+
+{% endif %}
+{% if chrony_conf_maxslewrate is defined %}
+##
+# The maxslewrate directive sets the maximum rate at which chronyd is allowed to
+# slew the time. It limits the slew rate controlled by the correction time ratio.
+maxslewrate {{ write(chrony_conf_maxslewrate) }}
+
+{% endif %}
+{% if chrony_conf_tempcomp is defined %}
+##
+# The tempcomp directive can be used to compensate for the changes in the
+# temperature and improve the stability and accuracy of the clock.
+tempcomp {{ write(chrony_conf_tempcomp) }}
+
+{% endif %}
+{#
+ # NTP server
+ #}
+{% if chrony_conf_allows | default([]) | length > 0 %}
+##
+# The allow directive is used to designate a particular subnet from which NTP
+# clients are allowed to access the computer as an NTP server.
+{% for entry in chrony_conf_allows %}
+allow {{ write(entry) }}
+{% endfor %}
+
+{% endif %}
+{% if chrony_conf_denies | default([]) | length > 0 %}
+##
+# This is similar to the allow directive, except that it denies NTP client
+# access to a particular subnet or host, rather than allowing it.
+{% for entry in chrony_conf_denies %}
+deny {{ write(entry) }}
+{% endfor %}
+
+{% endif %}
+{% if chrony_conf_bindaddress is defined %}
+##
+# The bindaddress directive allows you to restrict the network interface to
+# which chronyd will listen for NTP requests.
+bindaddress {{ write(chrony_conf_bindaddress) }}
+
+{% endif %}
+{% if chrony_conf_broadcast | default([]) | length > 0 %}
+##
+# The broadcast directive is used to declare a broadcast address to which
+# chronyd should send packets in the NTP broadcast mode (i.e. make chronyd act
+# as a broadcast server).
+broadcast {{ write(chrony_conf_broadcast) }}
+
+{% endif %}
+{% if chrony_conf_clientloglimit is defined %}
+##
+# This directive specifies the maximum amount of memory that chronyd is allowed
+# to allocate for logging of client accesses.
+clientloglimit {{ write(chrony_conf_clientloglimit) }}
+
+{% endif %}
+{% if chrony_conf_noclientlog is defined and chrony_conf_noclientlog == True %}
+##
+# This directive, which takes no arguments, specifies that client accesses are
+# not to be logged.
+noclientlog
+
+{% endif %}
+{% if chrony_conf_local is defined %}
+##
+# The local directive enables a local reference mode, which allows chronyd
+# operating as an NTP server to appear synchronised to real time.
+local {{ write(chrony_conf_local) }}
+
+{% endif %}
+{% if chrony_conf_port is defined %}
+##
+# This option allows you to configure the port on which chronyd will listen for
+# NTP requests.
+port {{ write(chrony_conf_port) }}
+
+{% endif %}
+{% if chrony_conf_ratelimit is defined %}
+##
+# This directive enables response rate limiting for NTP packets.
+ratelimit {{ write(chrony_conf_ratelimit) }}
+
+{% endif %}
+{% if chrony_conf_smoothtime is defined %}
+##
+# The smoothtime directive can be used to enable smoothing of the time that
+# chronyd serves to its clients to make it easier for them to track it and keep
+# their clocks close together.
+smoothtime {{ write(chrony_conf_smoothtime.max_freq) }} {{ write(chrony_conf_smoothtime.max_wander) }}{% if chrony_conf_smoothtime.leaponly %} leaponly{% endif %} {##}
+
+{% endif %}
+{#
+ # Command: and monitoring access
+ #}
+{% if chrony_conf_bindcmdaddress is defined %}
+##
+# The bindcmdaddress directive allows you to specify the network interface on
+# which chronyd will listen for monitoring command packets (issued by chronyc)
+bindcmdaddress {{ write(chrony_conf_bindcmdaddress) }}
+
+{% endif %}
+{% if chrony_conf_cmdallow is defined %}
+##
+# This is similar to the allow directive, except that it allows monitoring
+# access (rather than NTP client access) to a particular subnet or host.
+cmdallow {{ write(chrony_conf_cmdallow) }}
+
+{% endif %}
+{% if chrony_conf_cmddeny is defined %}
+##
+# This is similar to the cmdallow directive, except that it denies monitoring
+# access to a particular subnet or host, rather than allowing it. The syntax is
+# identical.
+cmddeny {{ write(chrony_conf_cmddeny) }}
+
+{% endif %}
+{% if chrony_conf_cmdport is defined %}
+##
+# The cmdport directive allows the port that is used for run-time monitoring
+# (via the chronyc program) to be altered from its default (323).
+cmdport {{ write(chrony_conf_cmdport) }}
+
+{% endif %}
+{% if chrony_conf_cmdratelimit is defined %}
+##
+# This directive enables response rate limiting for command packets. It is
+# similar to the ratelimit directive.
+cmdratelimit {{ write(chrony_conf_cmdratelimit) }}
+
+{% endif %}
+{#
+ # Real-time clock (RTC)
+ #}
+{% if chrony_conf_hwclockfile is defined %}
+##
+# The hwclockfile directive sets the location of the adjtime file which is used
+# by the hwclock program on Linux.
+hwclockfile {{ write(chrony_conf_hwclockfile) }}
+
+{% endif %}
+{% if chrony_conf_rtcautotrim is defined %}
+##
+# The rtcautotrim directive is used to keep the RTC close to the system clock
+# automatically.
+rtcautotrim {{ write(chrony_conf_rtcautotrim) }}
+
+{% endif %}
+{% if chrony_conf_rtcdevice is defined %}
+##
+# The rtcdevice directive sets the path to the device file for accessing the
+# RTC.
+rtcdevice {{ write(chrony_conf_rtcdevice) }}
+
+{% endif %}
+{% if chrony_conf_rtcfile is defined %}
+##
+# The rtcfile directive defines the name of the file in which chronyd can save
+# parameters associated with tracking the accuracy of the RTC.
+rtcfile {{ write(chrony_conf_rtcfile) }}
+
+{% endif %}
+{% if chrony_conf_rtconutc is defined and chrony_conf_rtconutc == True %}
+##
+# If the rtconutc directive appears, it means the RTC is required to keep UTC.
+rtconutc
+
+{% endif %}
+{% if chrony_conf_rtcsync is defined and chrony_conf_rtcsync == True %}
+##
+# The rtcsync directive enables a mode where the system time is periodically
+# copied to the RTC and chronyd does not try to track its drift.
+rtcsync
+
+{% endif %}
+{#
+ # Logging
+ #}
+{% if chrony_conf_logs | default([]) | length > 0 %}
+##
+# The log directive indicates that certain information is to be logged.
+logs {{ write(chrony_conf_logs) }}
+
+{% endif %}
+{% if chrony_conf_logbanner is defined %}
+##
+# The logbanner directive specifies after how many entries in the log file
+# should be the banner written.
+logbanner {{ write(chrony_conf_logbanner) }}
+
+{% endif %}
+{% if chrony_conf_logchange is defined %}
+##
+# This directive sets the threshold for the adjustment of the system clock that
+# will generate a syslog message.
+logchange {{ write(chrony_conf_logchange) }}
+
+{% endif %}
+{% if chrony_conf_logdir is defined %}
+##
+# This directive allows the directory where log files are written to be
+# specified.
+logdir {{ write(chrony_conf_logdir) }}
+
+{% endif %}
+{% if chrony_conf_mailonchange is defined %}
+##
+# This directive defines an email address to which mail should be sent if
+# chronyd applies a correction exceeding a particular threshold to the system
+# clock.
+mailonchange {{ write(chrony_conf_mailonchange) }}
+
+{% endif %}
+{#
+ # Miscellaneous:
+ #}
+{% if chrony_conf_includes | default([]) | length > 0 %}
+##
+# The include directive includes a configuration file or multiple configuration
+# files if a wildcard pattern is specified. This can be useful when maintaining
+# configuration on multiple hosts to keep the differences in separate files.
+{% for entry in chrony_conf_includes %}
+include {{ write(entry) }}
+{% endfor %}
+
+{% endif %}
+{% if chrony_conf_keyfile is defined %}
+##
+# This directive is used to specify the location of the file containing ID-key
+# pairs for authentication of NTP packets. The argument is simply the name of
+# the file containing the ID-key pairs. The format of the file is shown below:
+keyfile {{ write(chrony_conf_keyfile) }}
+
+{% endif %}
+{% if chrony_conf_lock_all is defined and chrony_conf_lock_all == True %}
+##
+# The lock_all directive will lock chronyd into RAM so that it will never be
+# paged out. This mode is only supported on Linux. This directive uses the Linux
+# mlockall() system call to prevent chronyd from ever being swapped out. This
+# should result in lower and more consistent latency. It should not have
+# significant impact on performance as chronyd’s memory usage is modest. The
+# mlockall(2) man page has more details.
+lock_all
+
+{% endif %}
+{% if chrony_conf_pidfile is defined %}
+##
+# chronyd always writes its process ID (PID) to a file, and checks this file on
+# startup to see if another chronyd may already be running on the system. By
+# default, the file used is /var/run/chronyd.pid. The pidfile directive allows
+# the name to be changed, e.g.:
+pidfile {{ write(chrony_conf_pidfile) }}
+
+{% endif %}
+{% if chrony_conf_sched_priority is defined %}
+##
+# On Linux, the sched_priority directive will select the SCHED_FIFO real-time
+# scheduler at the specified priority.
+sched_priority {{ write(chrony_conf_sched_priority) }}
+
+{% endif %}
+{% if chrony_conf_user is defined %}
+##
+# The user directive sets the name of the system user to which chronyd will
+# switch after start in order to drop root privileges.
+user {{ write(chrony_conf_user) }}
+
+{% endif %}
