@@ -11,14 +11,14 @@
    - "{{ chrony_pre_pkgs }}"
   tags: chrony
 
-- name: "Install Chrony"
+- name: "Installation"
   package:
     name: "{{ item }}{% if chrony_version not in ['', 'latest'] %}-{{ chrony_version }}{% endif %}"
     state: "{% if chrony_version != 'latest' %}present{% else %}latest{% endif %}"
   with_items: "{{ chrony_pkgs }}"
   tags: chrony
 
-- name: "Chrony Configuration"
+- name: "Configuration file"
   template:
     src:    etc/chrony.conf.j2
     dest:   "{{ chrony_path_info.conf_path }}"
@@ -30,7 +30,6 @@
     setype: net_conf_t
   notify:
    - Restart Chrony
-  register: chrony_conf
   tags: chrony
 
 - name: "SELinux-aware Chrony Client"
@@ -45,14 +44,12 @@
     name:    "{{ chrony_service_info.name }}"
     state:   started
     enabled: yes
-    pattern: chronyd
   tags: chrony
 
-- name: "Restart Chrony"
-  service:
-    name:    "{{ chrony_service_info.name }}"
-    state:   restarted
-    enabled: yes
-    pattern: chronyd
-  when: chrony_conf | changed
+
+- name: "Force Restart"
+  command: /bin/true
+  notify:
+   - Restart Chrony
+  when: chrony_force_restart | default(false) | bool
   tags: chrony

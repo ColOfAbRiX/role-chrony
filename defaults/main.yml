@@ -7,6 +7,9 @@
 # - "<version>" to install a specific version
 chrony_version: ''
 
+# If set to true, it will restart chrony
+chrony_force_restart: false
+
 #
 # Configuration file /etc/crony.conf
 # See: https://chrony.tuxfamily.org/doc/2.4/chrony.conf.html

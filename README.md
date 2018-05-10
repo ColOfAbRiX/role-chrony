@@ -1,38 +1,48 @@
-Role Name
-=========
+# role-chrony
 
-A brief description of the role goes here.
+Ansible role to install and configure Chrony.
 
-Requirements
-------------
+The role is fully generic and supports all the Chrony settings
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+## Requirements
 
-Role Variables
---------------
+The role requires RHEL/CentOS 7 to work.
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+## Role Variables
 
-Dependencies
-------------
+The variables are fully documented in the [default configuration](defaults/main.yml) file, including their default values and some examples. This file contains all the settings that can be configured.
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+A list of the most generic variable is the following:
 
-Example Playbook
-----------------
+| Variable                 | Default | Description                                       |
+| :---                     | :---    | :---                                              |
+| `chrony_version`         | ``      | Version of chrony to install                      |
+| `chrony_force_restart`   | `false` | If set to `true` it will force Chrony to restart. |
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+Please refer to the default configuration file for the full list and use Linux man pages if you need more information on Chrony. The supported variables are a mapping of Chrony's variables.
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+## Example Playbook
 
-License
--------
+Using the role without any specific configuration is very simple:
 
-BSD
+```Yaml
+- hosts: servers
+  vars:
+    chrony_conf_servers:
+     - { hostname: vmntp01.example.com, iburst: yes }
+     - { hostname: vmntp02.example.com, iburst: yes }
+  roles:
+   - role: chrony
+```
 
-Author Information
-------------------
+## License
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+MIT
+
+## Author Information
+
+[Fabrizio Colonna](colofabrix@tin.it)
+
+## Contributors
+
+Pull requests are also very welcome. Please create a topic branch for your proposed changes. If you don't, this will create conflicts in your fork after the merge.
