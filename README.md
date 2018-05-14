@@ -12,14 +12,16 @@ The role requires RHEL/CentOS 7 to work.
 
 The variables are fully documented in the [default configuration](defaults/main.yml) file, including their default values and some examples. This file contains all the settings that can be configured.
 
+Please refer to the default configuration file for the full list and use Linux man pages if you need more information on Chrony.
+
 A list of the most generic variable is the following:
 
 | Variable                 | Default | Description                                       |
 | :---                     | :---    | :---                                              |
-| `chrony_version`         | ``      | Version of chrony to install                      |
+| `chrony_version`         | `''`    | Version of chrony to install                      |
 | `chrony_force_restart`   | `false` | If set to `true` it will force Chrony to restart. |
 
-Please refer to the default configuration file for the full list and use Linux man pages if you need more information on Chrony. The supported variables are a mapping of Chrony's variables.
+All the other variables are a mapping of Chrony's settings.
 
 ## Example Playbook
 
